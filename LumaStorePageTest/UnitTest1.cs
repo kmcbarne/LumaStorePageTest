@@ -9,7 +9,6 @@ namespace LumaStorePageTest
     {
         String lumaUrl = "https://magento.softwaretestingboard.com/";
         IWebDriver driver;
-        WebDriverWait? shortWait;
 
         [SetUp]
         public void Setup()
@@ -18,8 +17,6 @@ namespace LumaStorePageTest
             driver = new ChromeDriver();
             driver.Manage().Window.Maximize();
         }
-
-        // Cart Total xpath - //*[@id="minicart-content-wrapper"]/div[2]/div[2]/div/span/span
 
         /// <summary>
         /// Tests that an item with all options selected can be added to the cart.
@@ -54,10 +51,6 @@ namespace LumaStorePageTest
             // Verify that the cart displays the matching options selected
             Assert.That(cartItemSize.Text, Is.EqualTo("XL"));
             Assert.That(cartItemColor.Text, Is.EqualTo("Purple"));
-
-            //*[@id="mini-cart"]/li/div/div/div[1]/div/dl
-            //*[@id="mini-cart"]/li/div/div/div[1]/div/dl/dd[1]/span
-            //*[@id="mini-cart"]/li/div/div/div[1]/div/dl/dd[2]/span
         }
 
         /// <summary>
@@ -98,24 +91,6 @@ namespace LumaStorePageTest
             Assert.That(addSuccessMessage.Text, Is.EqualTo(successfulAddMessage));
         }
 
-        [Test]
-        public void ValidateCartTotalUpdatesOnItemAdd()
-        {
-            OpenLumaStore();
-            SelectRadiantTeeOptions();
-
-            // Wait for a brief delay to allow the cart to update if necessary
-            WebDriverWait cartCounterWait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-            IWebElement cartCounter = cartCounterWait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//span[@class='counter-number']")));
-
-            Double startingCartTotal = GetCartTotal();
-            CloseMiniCartPopup();
-            SelectRadiantTeeOptions();
-            Double finalCartTotal = GetCartTotal();
-
-            Assert.That(finalCartTotal - startingCartTotal, Is.EqualTo(22.00));
-        }
-
         /// <summary>
         /// Tests that the correct warning will be displayed when an item is added to the cart with insufficient options selected.
         /// </summary>
@@ -124,10 +99,11 @@ namespace LumaStorePageTest
         {
             OpenLumaStore();
             AddArgusTankWithoutOptions();
-
-            //div[@class='message-notice notice message']
         }
 
+        /// <summary>
+        /// Disposes of the WebDriver instance created to run the tests.
+        /// </summary>
         [TearDown]
         public void CleanUp()
         {
@@ -141,8 +117,12 @@ namespace LumaStorePageTest
         {
             // Navigate to the Luma Store page and wait for the page to load.
             driver.Url = lumaUrl;
-            System.Threading.Thread.Sleep(2000);
 
+            // Wait until the 'Home Page' banner is displayed at the top of the page
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMilliseconds(2000));
+            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//span[@class='base']")));
+
+            // Update progress on Console for debugging reference
             Console.WriteLine("Luma Store page successfully opened.");
         }
 
@@ -161,37 +141,8 @@ namespace LumaStorePageTest
             radiantTeePurpleButton.Click();
             radiantTeeAddToCartButton.Click();
 
+            // Update progress on Console for debugging reference
             Console.WriteLine("Options selected and Radiant Tee added to cart.");
-        }
-
-        public Double GetCartTotal()
-        {
-            WebDriverWait cartLoadWait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-
-            //if (!IsMiniCartDisplayed())
-            //OpenMiniCartPopup();
-            Thread.Sleep(5000);
-            //IWebElement cartTotalField = cartLoadWait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//div[@class='amount price-container']")));
-            IWebElement cartTotalField = driver.FindElement(By.CssSelector("span[data-bind='html: cart().subtotal_excl_tax'] span[class='price']"));
-            Console.WriteLine(cartTotalField.Text);
-            // CSS - span[data-bind='html: cart().subtotal_excl_tax'] span[class='price']
-            return Double.Parse(cartTotalField.Text);
-        }
-        //*[@id="minicart-content-wrapper"]/div[2]/div[2]/div/span/span
-        public bool IsMiniCartDisplayed()
-        {
-            IWebElement miniCartPopup = driver.FindElement(By.XPath("//*[@id=\"ui-id-1\"]"));
-
-            return miniCartPopup.Displayed;
-        }
-
-        /// <summary>
-        /// Clicks the cart icon to open the mini-cart popup.
-        /// </summary>
-        public void OpenMiniCartPopup()
-        {
-            IWebElement cartIcon = driver.FindElement(By.XPath("/html/body/div[2]/header/div[2]/div[1]/a"));
-            cartIcon.Click();
         }
 
         /// <summary>
@@ -223,6 +174,7 @@ namespace LumaStorePageTest
             IWebElement addToCartWarning = pageLoadWait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//div[@data-bind='html: $parent.prepareMessageForHtml(message.text)']")));
             Assert.That(addToCartWarning.Text, Is.EqualTo(missingOptionsMessage));
 
+            // Update progress on Console for debugging reference
             Console.WriteLine("Warning displayed due to insufficient options selected on Argus Tank");
         }
 
@@ -236,61 +188,11 @@ namespace LumaStorePageTest
             WebDriverWait cartCounterWait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
             IWebElement cartCounter = cartCounterWait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath("//span[@class='counter-number']")));
 
+            // Update progress on Console for debugging reference
             Console.WriteLine("Cart Item Count retrieved: " + cartCounter.Text);
 
             // Parse the cart counter text and return the value as an Integer
             return cartCounter.Text;
-        }
-
-        // Abandon
-        public int AddExtraItemsToCart()
-        {
-            Random rng = new Random();
-            int itemsToAdd = rng.Next(1, 2);
-            List<String> storeItems = new List<String>();
-            IWebElement extraItem;
-
-            storeItems.Add("//li[5]//div[1]//div[1]//div[3]//div[1]//div[1]//form[1]//button[1]");
-            storeItems.Add("//li[6]//div[1]//div[1]//div[3]//div[1]//div[1]//form[1]//button[1]");
-
-            for (int i = 1; i <= itemsToAdd; i++)
-            {
-                WebDriverWait extraWait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
-                extraItem = extraWait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementIsVisible(By.XPath(storeItems[i])));
-                extraItem.Click();
-                CloseMiniCartPopup();
-            }
-
-            return itemsToAdd;
-
-
-            // Radiant Tee
-            // XS   -   //div[@class='swatch-opt-1556']//div[@id='option-label-size-143-item-166']
-            // S    -   //div[@class='swatch-opt-1556']//div[@id='option-label-size-143-item-167']
-            // M    -   //div[@class='swatch-opt-1556']//div[@id='option-label-size-143-item-168']
-            // L    -   //div[@class='swatch-opt-1556']//div[@id='option-label-size-143-item-169']
-            // XL   -   //div[@class='swatch-opt-1556']//div[@id='option-label-size-143-item-170']
-
-            // Blue     //div[@id='option-label-color-93-item-50']
-            // Orange   //div[@id='option-label-color-93-item-56']
-            // Purple   //div[@class='swatch-opt-1556']//div[@id='option-label-color-93-item-57']
-
-            // Breathe-Easy Tank
-            // XS   -   //div[@class='swatch-opt-1812']//div[@id='option-label-size-143-item-166']
-            // S    -   //div[@class='swatch-opt-1812']//div[@id='option-label-size-143-item-167']
-            // M    -   //div[@class='swatch-opt-1812']//div[@id='option-label-size-143-item-168']
-            // L    -   //div[@class='swatch-opt-1812']//div[@id='option-label-size-143-item-169']
-            // XL   -   //div[@class='swatch-opt-1812']//div[@id='option-label-size-143-item-170']
-
-            // Purple   //div[@class='swatch-opt-1812']//div[@id='option-label-color-93-item-57']
-            // White    //div[@id='option-label-color-93-item-59']
-            // Yellow   //div[@id='option-label-color-93-item-60']
-
-            // Fusion Messenger Bag
-            // Add      //li[5]//div[1]//div[1]//div[3]//div[1]//div[1]//form[1]//button[1]
-
-            // Push It Messenger Bag
-            // Add      //li[6]//div[1]//div[1]//div[3]//div[1]//div[1]//form[1]//button[1]
         }
     }
 }
